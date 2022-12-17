@@ -1,0 +1,22 @@
+policy_kwargs:
+  policy:
+    vertiport:
+      input_channels: 4
+      hidden_channels: 150
+      output_channels: 64
+    evtol:
+      input_channels: 5
+      hidden_channels: 150
+      output_channels: 64
+    mlp:
+      hidden1: 128
+      hidden2: 64
+    latent: 11
+
+  value:
+    bias: False
+    hidden1: 250
+    hidden2: 250
+    hidden3: 250
+    activ: rrelu
+    latent: 1

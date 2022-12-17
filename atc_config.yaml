@@ -1,0 +1,21 @@
+test: False
+noise: False
+noise_percent: 0.05
+
+number_of_eVTOLs: 4
+
+clock_speed: 300
+agent_type: graph_learning
+
+eVTOL_offsets: [[0,0,-2], [-6,0,-1], [2,-3,0], [-6,-4,-3], [3,0,-4]]
+
+eVTOL:
+  noise_percent: 0.05
+  clock_speed: 300
+
+Vertiport:
+  normal_ports: [[0,0, -2], [-3,0,-2]]
+  battery_ports: [[-2,3,-2]]
+  hovering_spots: [[-5, 5.5, -1.25], [-5, -3, -1.25], [-6, 1.5, -1.25], [-1, 6.5, -1.25], [-0.5, -4, -1.25], [2, 2.5, -1.25]]
+  destinations: [[-8.5, 5, -5], [-9, -4, -5], [-4, 10, -5], [-3, -7, -5], [2, 8, -5], [4, -6.5, -5]]
+
