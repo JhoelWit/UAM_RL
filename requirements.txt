@@ -1,0 +1,8 @@
+airsim==1.8.1
+gym==0.21.0
+numpy==1.21.6
+PyYAML==6.0
+stable_baselines3==1.6.2
+sympy==1.10.1
+torch==1.10.0+cu113
+torch_geometric==2.0.4
