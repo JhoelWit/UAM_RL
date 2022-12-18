@@ -12,6 +12,7 @@ eVTOL_offsets: [[0,0,-2], [-6,0,-1], [2,-3,0], [-6,-4,-3], [3,0,-4]]
 eVTOL:
   noise_percent: 0.05
   clock_speed: 300
+  eVTOL_offsets: [[0,0,-2], [-6,0,-1], [2,-3,0], [-6,-4,-3], [3,0,-4]]
 
 Vertiport:
   normal_ports: [[0,0, -2], [-3,0,-2]]
