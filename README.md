@@ -5,7 +5,7 @@ This is a refactored (and still in the refactoring process) version of the [GLUA
 
 The goal was to create an air traffic controller agent which could assume the responsibilities of a real life ATC, utilizing urban air mobility to command electrical vertical takeoff and landing vehicles around a vertiport. The problem is formulated as a markov decision process, and PPO is used for the reinforcement learning algorithm. 
 
-Unreal Engine and Airsim is used to create a simple environment for training and testing, consisting of three helipad objects (2 normal ports and one battery charging port):
+Unreal Engine and Airsim is used to create a simple [environment](https://drive.google.com/file/d/1XT5h9mm4l6FRyraBGow9nLI4yc4STpl0/view?usp=sharing) for training and testing, consisting of three helipad objects (2 normal ports and one battery charging port):
 
 ![](img/sim_env.gif)
 
