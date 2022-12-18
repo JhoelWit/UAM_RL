@@ -9,12 +9,16 @@ Unreal Engine and Airsim is used to create a simple environment for training and
 
 ![](img/sim_env.gif)
 
-The action space consists of 11 actions, and the state space is formulated as two homogeneous graphs, for the vertiport and eVTOLs respectively. 
+The action space consists of 11 actions, and the state space is formulated as two homogeneous graphs, for the vertiport and eVTOLs respectively. Here is an example of the agent taking three separate actions:
 
 ![](img/EVTOL_actions.gif)
 
 The PPO policy uses graph neural networks to extract key features from the two graphs, and propagates them through a mulit-layered perceptron to get log probabilities for the next discrete action:
 
 ![](img/GRL_Policy.png)
+
+This codestack was used to train a successful ATC agent which outperformed a common baseline for flight planning (first come first serve) as well as a random agent and one using a denser policy network without graphs:
+
+![](img/case1_plot_final_glass-min.png)
 
 The papers will be attached to this readme once they're published and/or added to arXiv. 
