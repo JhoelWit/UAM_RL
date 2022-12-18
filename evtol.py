@@ -8,24 +8,27 @@ import numpy as np
 class eVTOL:
     def __init__(self, evtol_name, offset, config):
         self.noise_percent = config["noise_percent"]
+        self.clock_speed = config["clock_speed"]
+        self.evtol_locs = config["eVTOL_offsets"]
+
+
         self.evtol_name = evtol_name
-        self.evtol_no = evtol_name # use split and get the evtol number alone
-        self.velocity = 1 # 1 m/s
-        self.all_battery_states = {'critical':0,'sufficient':1,'full':2} #Added 4.25.22 -> 3 different battery states to go with the overall battery remaining
-        self.battery_state = 2
+        self.evtol_no = evtol_name.split("l")[1]
+        self.velocity_mps = 1
+        self.all_battery_states = {'critical':0,'sufficient':1,'full':2}
+        self.battery_state = self.all_battery_states["full"]
         self.battery_remaining = 100
         self.distance_traveled = 0
         self.all_states = {"in-air":0, "in-port":1, "battery-port":2, "in-action":3, "in-destination":4}
         self.job_status = {"initial_loc":None, "final_dest":None, "current_pos": None}
         self.status = 1
         self.status_to_set = 1
-        self.evtol_locs = [[0,0,-1],[6,0,-1],[-2,3,-1],[6,4,-1],[-3,0,-1]]
         self.offset = offset
         self.current_location = []
         self.previous_location = []
         self.in_portzone = False
         self.port_center_loc =[0,0,-4] #Filler
-        self.dist_threshold = 10
+        self.dist_threshold_meters = 10
         self.current_location = None
         self.in_battery_port = 0
         self.port_identification = None
@@ -34,7 +37,6 @@ class eVTOL:
         self.schedule_status = 0 
         self.tasks_completed = 0
         self.good_takeoffs = 0
-        self.clock_speed = config["clock_speed"]
         self.sleep_time = 0.5 / self.clock_speed
 
     def get_status(self):
@@ -47,24 +49,12 @@ class eVTOL:
     def set_status(self,status, final_status):
         self.status = self.all_states[status]
         self.status_to_set = self.all_states[final_status]
-    
-    def get_schedule_state(self):
-
-        if (self.upcoming_schedule['landing-time'] - 1) <= self.upcoming_schedule['time'] <= (self.upcoming_schedule['landing-time'] + 1):
-            schedule = 0
-        else:
-            schedule = 1
-        if (self.upcoming_schedule['takeoff-time'] - 1) <= self.upcoming_schedule['time'] <= (self.upcoming_schedule['takeoff-time'] + 1):
-            schedule = 0
-        else:
-            schedule = 1
-        return schedule 
 
     def get_battery_state(self):
         return self.battery_state 
     
-    def calculate_reduction(self,old_position,new_position): 
-        time_travelled = np.linalg.norm(np.array(old_position)-np.array(new_position)) / self.velocity
+    def calculate_reduction(self, old_position, new_position): 
+        time_travelled = np.linalg.norm(np.array(old_position)-np.array(new_position)) / self.velocity_mps
         discharge_rate = 0.50
 
         if time_travelled < 1 and self.status == self.all_states["in-air"]:
@@ -80,19 +70,21 @@ class eVTOL:
             self.battery_remaining = 0
         if self.battery_remaining == 100:
             self.battery_state = self.all_battery_states['full']
-        elif 30 <= self.battery_remaining <= 100: #Added 4.25.22 
-            self.battery_state = self.all_battery_states['sufficient'] #Ditto
+
+        elif 30 <= self.battery_remaining <= 100: 
+            self.battery_state = self.all_battery_states['sufficient'] 
+
         elif 0 <= self.battery_remaining <= 30:
-            self.battery_state = self.all_battery_states['critical'] #Ditto
+            self.battery_state = self.all_battery_states['critical'] 
     
     def check_zone(self):
         dist = self.calculate_distance(self.current_location)
-        if dist<self.dist_threshold:
+        if dist < self.dist_threshold_meters:
             self.in_portzone = True
         else:
             self.in_portzone = False
     
-    def update(self, current_loc, client, port, env_time, noise=False):
+    def update_evtol(self, current_loc, client, port, env_time, noise=False):
         if noise and np.random.uniform() < self.noise_percent:
             velocity = 1 - np.random.uniform()
         else:
@@ -133,10 +125,6 @@ class eVTOL:
                 distance_meters = self.calculate_distance(current_loc[:-1],self.job_status['final_dest'][:-1])
                 if distance_meters < 0.75: #evtol reached the hover spot and is ready for the next task
                     client.hoverAsync(vehicle_name = self.evtol_name)
-                    old_position = current_loc
-                    new_position = self.job_status['final_dest']
-                    # reduce = self.calculate_reduction(old_position,new_position) #Ditto
-                    # self.update_battery(reduce) #Ditto
                     self.set_status('in-air','in-action')
                 else:
                     final_pos = self.job_status['final_dest']
@@ -169,10 +157,10 @@ class eVTOL:
             pass
 
         elif self.status == self.all_states['in-destination']:
-            self.assign_schedule(port,client,choice=1) #Assigning a hover port
+            self.assign_schedule(port, choice=1) #Assigning a hover port
             self.port_identification = {'type':'hover','port_no':port.hovering_spots.index(self.job_status['final_dest'])}
             des = self.job_status['final_dest']
-            final_pos = self.get_final_pos(des, self.offset)
+            final_pos = self.get_offset_position(des, self.offset)
             client.moveToPositionAsync(final_pos[0],final_pos[1],final_pos[2], velocity=velocity, vehicle_name=self.evtol_name)
             time.sleep(self.sleep_time)
             self.set_status('in-action','in-air')
@@ -180,18 +168,13 @@ class eVTOL:
     def calculate_distance(self,cur_location, dest):
         return np.linalg.norm(np.array(dest)-np.array(cur_location))      
         
-    def get_final_pos(self,port, offset):
-        # print([port , offset, [port[0] +offset[0] , port[1] + offset[1], port[2]]])
+    def get_offset_position(self, port, offset):
         return [port[0] - offset[0] , port[1] - offset[1], port[2]]
     
-    def assign_schedule(self, port, client = None, choice = 0):
+    def assign_schedule(self, port, choice = 0):
         """
-        Instead of the schedule class, everytime the evtol reaches its destination(fake ports) I assign another schedule. 
-
-        Returns
-        -------
-        None.
-
+        The eVTOL is given a destination from the list of destination ports. The eVTOL is also given a random landing and random takeoff time 
+        depending on which state it's currently in. 
         """
         self.job_status['final_dest'] = port.get_destination(choice)
         random_landing_seconds = random.randint(1,3) * self.clock_speed 
@@ -204,20 +187,14 @@ class eVTOL:
         self.upcoming_schedule["delay"] = None
         self.upcoming_schedule["end-port"] = self.job_status['final_dest']
 
-    def get_state_status(self):
+    def get_schedule_status(self):
         """
-        Our state space(On-time to takeoff/land (0,1)) indicates the takeoff and landing time, delay. Please calculate them here
-        For perfect takeoff - you can have threshold of 1 minute. Create new variable, check its timing if it is good timing set it to 1 else 0
-        if there is delay just calculate them for the reward claculation
-        1. For landing the delay time is from the time mentioned in the self.upcoming_schedule["Landing-time"]
-        2. for takeoff the delay time is from the time mentioned in the self.upcoming_schedule["takeoff-time"]
-
-        Returns
-        -------
-        None.
+        If the eVTOL is in the air or moving to a new location, the landing time will be taken into account for the schedule status. Vice versa for the takeoff time.
+        If the eVTOL hasn't taken off/landed and is within 5 minutes of it's predetermined takeoff/landing time, then it is on time (schedule status=1). 
+        Any earlier than that is considered early (schedule status=0) and any later is considered late (schedule status=1)
 
         """
-        threshold_seconds = 300 # 5 minutes
+        threshold_seconds = 300 
         if self.status == self.all_states['in-air'] or self.status == self.all_states['in-action']:
             if (self.upcoming_schedule["landing-time"] - threshold_seconds) <= self.upcoming_schedule['time'] <= (self.upcoming_schedule["landing-time"] + threshold_seconds):
                 self.schedule_status = 0
@@ -229,6 +206,7 @@ class eVTOL:
                 self.schedule_status = 2
                 self.upcoming_schedule["delay"] = self.upcoming_schedule["time"] - self.upcoming_schedule["landing-time"] 
                 return 2
+
         elif self.status == self.all_states['in-port'] or self.status == self.all_states['battery-port']:
             if (self.upcoming_schedule["takeoff-time"] - threshold_seconds <= self.upcoming_schedule['time'] <= self.upcoming_schedule["takeoff-time"] + threshold_seconds):
                 self.schedule_status = 0

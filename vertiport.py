@@ -46,8 +46,9 @@ class Vertiport():
                 self.change_hover_spot_status(port['port_no'], False)
 
     def update_all(self):
-        """This function will iterate through all ports, battery ports, and hover spots and 
-        update the vertiport feature matrix accordingly
+        """
+        This function will iterate through all ports, battery ports, and hover spots and 
+        update the vertiport feature matrix accordingly.
         """
         for i in range(self.num_ports):
             if self.port_status[i]['occupied'] == True:
@@ -132,7 +133,7 @@ class Vertiport():
 
         return cnt   
     
-    def get_availability_ports(self,drone_locs):
+    def get_availability_of_ports(self,drone_locs):
         empty_ports = self.get_count_empty_port()
         uams_inside = self.count_uavs_inside(drone_locs)
         percent = empty_ports/uams_inside
@@ -188,15 +189,10 @@ class Vertiport():
     def count_uavs_inside(self,drone_locs):
         UAVs_inside = 0
         for i in range(len(drone_locs)):
-            dist= self._calculate_distance(drone_locs[i])
+            dist= self.calculate_distance(drone_locs[i])
             if dist<self.distance_threshold_meters: #Switched from > to <
                 UAVs_inside +=1
         return UAVs_inside
     
-    def _calculate_distance(self,cur_location):
-
-        return np.linalg.norm(np.array(self.port_center_loc)-np.array(cur_location)) #math.dist starts at python3.8, I'm using 3.7 lol
-    
-    def get_all_port_statuses(self):
-        
-        return [self.port_status , self.battery_port_status, self.hover_spot_status]
+    def calculate_distance(self,cur_location):
+        return np.linalg.norm(np.array(self.port_center_loc) - np.array(cur_location)) #math.dist starts at python3.8, I'm using 3.7
