@@ -22,3 +22,5 @@ This codestack was used to train a successful ATC agent which outperformed a com
 ![](img/case1_plot_final_glass-min.png)
 
 The papers will be attached to this readme once they're published and/or added to arXiv. 
+
+UPDATE: Here is one of the [papers](https://arxiv.org/abs/2302.05849)
